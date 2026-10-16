@@ -1,0 +1,360 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="color-scheme" content="light dark">
+<style>body{margin:0}</style>
+<title>Singil</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,600;12..96,800&family=Instrument+Sans:wght@400;500;600&family=JetBrains+Mono:wght@500&display=swap">
+<style>
+/* Layout: one narrow column built for a phone. Summary figures first, then filters, then the invoice list. */
+:root {
+  --bg: #EEF1F4;
+  --surface: #FFFFFF;
+  --ink: #13202C;
+  --muted: #5B6A78;
+  --line: #D5DCE3;
+  --accent: #2547D0;
+  --accent-ink: #FFFFFF;
+  --paid: #0E7C4A;
+  --paid-bg: #DDF3E7;
+  --late: #B3261E;
+  --late-bg: #FBE1DE;
+  --due: #8A5A00;
+  --due-bg: #FBEFCF;
+  --font-display: "Bricolage Grotesque", "Trebuchet MS", sans-serif;
+  --font-body: "Instrument Sans", "Segoe UI", system-ui, sans-serif;
+  --font-num: "JetBrains Mono", ui-monospace, Menlo, Consolas, monospace;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #0F1720; --surface: #17222E; --ink: #E8EEF3; --muted: #9AA9B8; --line: #2A3947;
+    --accent: #7E98FF; --accent-ink: #0F1720;
+    --paid: #5FD39A; --paid-bg: #12332A;
+    --late: #FF8A80; --late-bg: #3A1B1A;
+    --due: #F2C25B; --due-bg: #3A2F10;
+    color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #0F1720; --surface: #17222E; --ink: #E8EEF3; --muted: #9AA9B8; --line: #2A3947;
+  --accent: #7E98FF; --accent-ink: #0F1720;
+  --paid: #5FD39A; --paid-bg: #12332A;
+  --late: #FF8A80; --late-bg: #3A1B1A;
+  --due: #F2C25B; --due-bg: #3A2F10;
+  color-scheme: dark;
+}
+* { box-sizing: border-box; }
+body {
+  background: var(--bg);
+  color: var(--ink);
+  font-family: var(--font-body);
+  font-size: 15px;
+  line-height: 1.45;
+  padding-block: 20px 48px;
+  padding-left: max(16px, env(safe-area-inset-left, 0px));
+  padding-right: max(16px, env(safe-area-inset-right, 0px));
+}
+.wrap { max-width: 640px; margin: 0 auto; display: flex; flex-direction: column; gap: 20px; }
+:focus-visible { outline: 3px solid var(--accent); outline-offset: 2px; }
+
+header { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; flex-wrap: wrap; }
+h1 { font-family: var(--font-display); font-weight: 800; font-size: 2rem; letter-spacing: -0.02em; margin: 0; }
+.tag { color: var(--muted); font-size: 0.9rem; margin: 0; }
+
+.summary { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 10px; }
+.stat { background: var(--surface); border: 1px solid var(--line); border-radius: 10px; padding: 12px 14px; min-width: 0; }
+.stat .label { font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.07em; color: var(--muted); }
+.stat .value { font-family: var(--font-num); font-size: 1.25rem; margin-top: 4px; overflow-wrap: anywhere; font-variant-numeric: tabular-nums; }
+.stat.late .value { color: var(--late); }
+.stat.paid .value { color: var(--paid); }
+
+button, input, textarea { font: inherit; color: inherit; }
+button { cursor: pointer; }
+.btn { border: 1px solid var(--line); background: var(--surface); border-radius: 8px; padding: 8px 12px; min-height: 40px; font-weight: 500; }
+.btn:hover { border-color: var(--muted); }
+.btn.primary { background: var(--accent); color: var(--accent-ink); border-color: var(--accent); font-weight: 600; }
+.btn.danger-armed { background: var(--late-bg); color: var(--late); border-color: var(--late); }
+
+details.add { background: var(--surface); border: 1px solid var(--line); border-radius: 10px; }
+details.add summary { list-style: none; padding: 14px; font-weight: 600; cursor: pointer; display: flex; justify-content: space-between; align-items: center; min-height: 48px; }
+details.add summary::-webkit-details-marker { display: none; }
+details.add summary::after { content: "+"; font-family: var(--font-num); font-size: 1.3rem; color: var(--accent); }
+details.add[open] summary::after { content: "\2212"; }
+form { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; padding: 0 14px 14px; }
+.field { display: flex; flex-direction: column; gap: 4px; min-width: 0; }
+.field.full { grid-column: 1 / -1; }
+.field label { font-size: 0.8rem; color: var(--muted); }
+input[type="text"], input[type="number"], input[type="date"] {
+  width: 100%; min-height: 42px; padding: 8px 10px; background: var(--bg); border: 1px solid var(--line); border-radius: 8px;
+}
+.form-actions { grid-column: 1 / -1; display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }
+.error { color: var(--late); font-size: 0.85rem; }
+@media (max-width: 420px) { form { grid-template-columns: minmax(0, 1fr); } }
+
+.filters { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
+.chip { border: 1px solid var(--line); background: transparent; border-radius: 999px; padding: 6px 14px; min-height: 36px; font-weight: 500; color: var(--muted); }
+.chip[aria-pressed="true"] { background: var(--ink); color: var(--bg); border-color: var(--ink); }
+.spacer { flex: 1; }
+
+.list { display: flex; flex-direction: column; gap: 10px; padding: 0; margin: 0; list-style: none; }
+.inv { background: var(--surface); border: 1px solid var(--line); border-radius: 10px; padding: 14px; display: flex; flex-direction: column; gap: 10px; min-width: 0; }
+.inv.is-late { border-left: 4px solid var(--late); }
+.row1 { display: flex; justify-content: space-between; gap: 12px; align-items: flex-start; }
+.client { font-weight: 600; font-size: 1.05rem; overflow-wrap: anywhere; }
+.desc { color: var(--muted); font-size: 0.88rem; overflow-wrap: anywhere; }
+.amount { font-family: var(--font-num); font-size: 1.1rem; white-space: nowrap; font-variant-numeric: tabular-nums; }
+.row2 { display: flex; gap: 8px 12px; align-items: center; flex-wrap: wrap; font-size: 0.85rem; color: var(--muted); }
+.no { font-family: var(--font-num); font-size: 0.8rem; }
+.pill { border-radius: 999px; padding: 2px 10px; font-size: 0.78rem; font-weight: 600; }
+.pill.paid { background: var(--paid-bg); color: var(--paid); }
+.pill.late { background: var(--late-bg); color: var(--late); }
+.pill.due { background: var(--due-bg); color: var(--due); }
+.ex { border: 1px dashed var(--muted); border-radius: 4px; padding: 0 6px; font-size: 0.72rem; text-transform: uppercase; letter-spacing: 0.06em; }
+.actions { display: flex; gap: 8px; flex-wrap: wrap; }
+.empty { background: var(--surface); border: 1px dashed var(--line); border-radius: 10px; padding: 28px 16px; text-align: center; color: var(--muted); }
+.note { font-size: 0.8rem; color: var(--muted); }
+.toast { position: fixed; left: 50%; transform: translateX(-50%); bottom: calc(16px + env(safe-area-inset-bottom, 0px)); background: var(--ink); color: var(--bg); padding: 10px 16px; border-radius: 8px; font-size: 0.9rem; max-width: calc(100vw - 32px); }
+@media (prefers-reduced-motion: no-preference) { .inv { transition: border-color 0.15s; } }
+</style>
+
+<div class="wrap">
+  <header>
+    <h1>Singil</h1>
+    <p class="tag">Know who owes you, and chase them politely.</p>
+  </header>
+
+  <section class="summary" aria-label="Summary" id="summary"></section>
+
+  <details class="add" id="addBox">
+    <summary>New invoice</summary>
+    <form id="addForm" novalidate>
+      <div class="field full"><label for="fClient">Client</label><input id="fClient" type="text" autocomplete="off" placeholder="e.g. Kape Kuya Cafe"></div>
+      <div class="field full"><label for="fDesc">What it is for</label><input id="fDesc" type="text" autocomplete="off" placeholder="e.g. Menu redesign"></div>
+      <div class="field"><label for="fAmount">Amount (PHP)</label><input id="fAmount" type="number" inputmode="decimal" min="0" step="0.01" placeholder="8500"></div>
+      <div class="field"><label for="fDue">Due date</label><input id="fDue" type="date"></div>
+      <div class="form-actions">
+        <button class="btn primary" type="submit">Add invoice</button>
+        <span class="error" id="formError" role="alert"></span>
+      </div>
+    </form>
+  </details>
+
+  <div class="filters" role="group" aria-label="Filter invoices" id="filters"></div>
+
+  <ul class="list" id="list"></ul>
+  <p class="note" id="note"></p>
+</div>
+<div class="toast" id="toast" hidden></div>
+
+<script>
+(function () {
+  var KEY = "singil.invoices.v1";
+  var money = new Intl.NumberFormat("en-PH", { style: "currency", currency: "PHP" });
+  var invoices = [];
+  var filter = "all";
+  var armed = null;
+  var armTimer = null;
+
+  function pad(n) { return n < 10 ? "0" + n : "" + n; }
+  function iso(d) { return d.getFullYear() + "-" + pad(d.getMonth() + 1) + "-" + pad(d.getDate()); }
+  function addDays(d, n) { var x = new Date(d.getFullYear(), d.getMonth(), d.getDate() + n); return x; }
+  function parse(s) { var p = s.split("-"); return new Date(+p[0], +p[1] - 1, +p[2]); }
+  function today() { var n = new Date(); return new Date(n.getFullYear(), n.getMonth(), n.getDate()); }
+  function fmtDate(s) { return parse(s).toLocaleDateString("en-PH", { month: "short", day: "numeric", year: "numeric" }); }
+  function esc(s) { return String(s).replace(/[&<>"']/g, function (c) { return { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]; }); }
+
+  function load() {
+    try {
+      var raw = localStorage.getItem(KEY);
+      if (raw) { var v = JSON.parse(raw); if (Array.isArray(v)) return v; }
+    } catch (e) {}
+    return null;
+  }
+  function save() { try { localStorage.setItem(KEY, JSON.stringify(invoices)); } catch (e) {} }
+
+  function seed() {
+    var t = today();
+    function mk(no, client, desc, amount, off, paidOffset) {
+      return { id: "ex" + no, no: "INV-" + pad(no).padStart(3, "0"), client: client, desc: desc, amount: amount,
+        due: iso(addDays(t, off)), paid: paidOffset !== undefined, paidOn: paidOffset !== undefined ? iso(addDays(t, paidOffset)) : null, example: true };
+    }
+    return [
+      mk(1, "Kape Kuya Cafe", "Menu redesign", 8500, -19),
+      mk(2, "Northpoint Dental", "Website updates", 12000, -3),
+      mk(3, "Lakbay Tours", "Booking page copy", 6500, 6),
+      mk(4, "Santos Family Bakery", "Logo files", 4200, 13),
+      mk(5, "Mabini Tutorial Center", "Poster set", 3800, -12, -9)
+    ];
+  }
+
+  function status(inv) {
+    if (inv.paid) return "paid";
+    return inv.due < iso(today()) ? "late" : "due";
+  }
+  function nextNo() {
+    var max = 0;
+    invoices.forEach(function (i) { var m = /(\d+)$/.exec(i.no); if (m) max = Math.max(max, +m[1]); });
+    return "INV-" + String(max + 1).padStart(3, "0");
+  }
+
+  function toast(msg) {
+    var el = document.getElementById("toast");
+    el.textContent = msg; el.hidden = false;
+    clearTimeout(toast.t);
+    toast.t = setTimeout(function () { el.hidden = true; }, 2200);
+  }
+
+  function reminder(inv) {
+    var late = status(inv) === "late";
+    return "Hi " + inv.client + ", a friendly reminder that invoice " + inv.no + " (" + inv.desc + ") for " + money.format(inv.amount) +
+      (late ? " was due on " : " is due on ") + fmtDate(inv.due) +
+      ". You can pay by GCash, Maya or bank transfer. Please let me know once it is sent. Thank you!";
+  }
+
+  function copyText(text) {
+    function fallback() {
+      var ta = document.createElement("textarea");
+      ta.value = text; ta.style.position = "fixed"; ta.style.opacity = "0";
+      document.body.appendChild(ta); ta.select();
+      var ok = false;
+      try { ok = document.execCommand("copy"); } catch (e) {}
+      document.body.removeChild(ta);
+      toast(ok ? "Reminder copied" : "Could not copy. Select and copy manually.");
+    }
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      navigator.clipboard.writeText(text).then(function () { toast("Reminder copied"); }, fallback);
+    } else { fallback(); }
+  }
+
+  function renderSummary() {
+    var out = 0, late = 0, paidMonth = 0;
+    var t = today(), ym = t.getFullYear() + "-" + pad(t.getMonth() + 1);
+    invoices.forEach(function (i) {
+      var s = status(i);
+      if (s !== "paid") out += i.amount;
+      if (s === "late") late += i.amount;
+      if (s === "paid" && i.paidOn && i.paidOn.slice(0, 7) === ym) paidMonth += i.amount;
+    });
+    document.getElementById("summary").innerHTML =
+      '<div class="stat"><div class="label">Unpaid</div><div class="value">' + money.format(out) + '</div></div>' +
+      '<div class="stat late"><div class="label">Overdue</div><div class="value">' + money.format(late) + '</div></div>' +
+      '<div class="stat paid"><div class="label">Paid this month</div><div class="value">' + money.format(paidMonth) + '</div></div>';
+  }
+
+  function renderFilters() {
+    var defs = [["all", "All"], ["unpaid", "Unpaid"], ["late", "Overdue"], ["paid", "Paid"]];
+    var html = defs.map(function (d) {
+      return '<button class="chip" type="button" data-f="' + d[0] + '" aria-pressed="' + (filter === d[0]) + '">' + d[1] + '</button>';
+    }).join("");
+    if (invoices.some(function (i) { return i.example; })) {
+      html += '<span class="spacer"></span><button class="btn" type="button" id="clearEx">Remove examples</button>';
+    }
+    document.getElementById("filters").innerHTML = html;
+  }
+
+  function renderList() {
+    var rows = invoices.slice().sort(function (a, b) {
+      var order = { late: 0, due: 1, paid: 2 };
+      var sa = order[status(a)], sb = order[status(b)];
+      if (sa !== sb) return sa - sb;
+      return a.due < b.due ? -1 : a.due > b.due ? 1 : 0;
+    }).filter(function (i) {
+      var s = status(i);
+      if (filter === "all") return true;
+      if (filter === "unpaid") return s !== "paid";
+      return s === filter;
+    });
+    var ul = document.getElementById("list");
+    if (!rows.length) {
+      ul.innerHTML = '<li class="empty">' + (invoices.length ? "No invoices match this filter." : "No invoices yet. Tap New invoice to add your first one.") + '</li>';
+    } else {
+      var t = iso(today());
+      ul.innerHTML = rows.map(function (i) {
+        var s = status(i);
+        var label = s === "paid" ? "Paid " + fmtDate(i.paidOn || i.due) : s === "late"
+          ? Math.round((today() - parse(i.due)) / 86400000) + " days overdue"
+          : (i.due === t ? "Due today" : "Due " + fmtDate(i.due));
+        var armedDel = armed === i.id;
+        return '<li class="inv ' + (s === "late" ? "is-late" : "") + '" data-id="' + esc(i.id) + '">' +
+          '<div class="row1"><div><div class="client">' + esc(i.client) + '</div><div class="desc">' + esc(i.desc) + '</div></div>' +
+          '<div class="amount">' + money.format(i.amount) + '</div></div>' +
+          '<div class="row2"><span class="no">' + esc(i.no) + '</span><span class="pill ' + s + '">' + label + '</span>' +
+          (i.example ? '<span class="ex">Example</span>' : '') + '</div>' +
+          '<div class="actions">' +
+          (s === "paid" ? '<button class="btn" data-a="unpay" type="button">Mark unpaid</button>'
+            : '<button class="btn primary" data-a="pay" type="button">Mark paid</button><button class="btn" data-a="remind" type="button">Copy reminder</button>') +
+          '<button class="btn ' + (armedDel ? "danger-armed" : "") + '" data-a="del" type="button">' + (armedDel ? "Tap again to delete" : "Delete") + '</button>' +
+          '</div></li>';
+      }).join("");
+    }
+    document.getElementById("note").textContent = invoices.length
+      ? "Saved in this browser only. Clearing site data or switching devices will not carry your invoices over."
+      : "";
+  }
+
+  function render() { renderSummary(); renderFilters(); renderList(); }
+
+  document.getElementById("filters").addEventListener("click", function (e) {
+    var f = e.target.closest("[data-f]");
+    if (f) { filter = f.getAttribute("data-f"); render(); return; }
+    if (e.target.id === "clearEx") {
+      invoices = invoices.filter(function (i) { return !i.example; });
+      save(); render(); toast("Examples removed");
+    }
+  });
+
+  document.getElementById("list").addEventListener("click", function (e) {
+    var b = e.target.closest("[data-a]");
+    if (!b) return;
+    var li = b.closest("[data-id]");
+    var id = li.getAttribute("data-id");
+    var inv = invoices.filter(function (i) { return i.id === id; })[0];
+    if (!inv) return;
+    var a = b.getAttribute("data-a");
+    if (a === "pay") { inv.paid = true; inv.paidOn = iso(today()); armed = null; save(); render(); toast("Marked as paid"); }
+    else if (a === "unpay") { inv.paid = false; inv.paidOn = null; armed = null; save(); render(); }
+    else if (a === "remind") { copyText(reminder(inv)); }
+    else if (a === "del") {
+      if (armed === id) {
+        invoices = invoices.filter(function (i) { return i.id !== id; });
+        armed = null; clearTimeout(armTimer); save(); render(); toast("Invoice deleted");
+      } else {
+        armed = id; render();
+        clearTimeout(armTimer);
+        armTimer = setTimeout(function () { armed = null; render(); }, 3500);
+      }
+    }
+  });
+
+  var form = document.getElementById("addForm");
+  form.addEventListener("submit", function (e) {
+    e.preventDefault();
+    var client = document.getElementById("fClient").value.trim();
+    var desc = document.getElementById("fDesc").value.trim();
+    var amount = parseFloat(document.getElementById("fAmount").value);
+    var due = document.getElementById("fDue").value;
+    var err = document.getElementById("formError");
+    if (!client) { err.textContent = "Enter the client's name."; return; }
+    if (!(amount > 0)) { err.textContent = "Enter an amount above zero."; return; }
+    if (!due) { err.textContent = "Pick a due date."; return; }
+    err.textContent = "";
+    invoices.push({ id: "i" + Date.now(), no: nextNo(), client: client, desc: desc || "Services", amount: amount, due: due, paid: false, paidOn: null, example: false });
+    save();
+    form.reset();
+    document.getElementById("fDue").value = iso(addDays(today(), 14));
+    document.getElementById("addBox").open = false;
+    filter = "all";
+    render(); toast("Invoice added");
+  });
+
+  document.getElementById("fDue").value = iso(addDays(today(), 14));
+  invoices = load() || seed();
+  render();
+})();
+</script>
+
+</body>
+</html>
